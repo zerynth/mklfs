@@ -168,13 +168,14 @@ static void compact(char *src) {
 void usage() {
 	fprintf(stdout, "Zerynth LittleFS Make\n");
 	fprintf(stdout, "---------------------\n");
-	fprintf(stdout, "usage: mklfs -c <pack-dir> -b <block-size> -r <read-size> -p <prog-size> -s <filesystem-size> -o <image-file-path> -h <cache-size> -w <block-wear> -k <shrink>\n");
+	fprintf(stdout, "usage: mklfs -c <pack-dir> -b <block-size> -r <read-size> -p <prog-size> -s <filesystem-size> -o <image-file-path> -h <cache-size> -l <lookahead-size> -w <block-wear> -k <shrink>\n");
 	fprintf(stdout, "       <pack-dir>         :: directory to use as filesystem content\n");
     fprintf(stdout, "       <image-file-path>  :: output file for the lfs image\n");
     fprintf(stdout, "       <block-size>       :: size of flash block (default 4096)\n");
     fprintf(stdout, "       <read-size>        :: size of a read operation (default 1024)\n");
     fprintf(stdout, "       <prog-size>        :: size of a prog operation (default 1024)\n");
     fprintf(stdout, "       <filesystem-size>  :: total size of filesystem\n");
+    fprintf(stdout, "       <lookahead-size>   :: size of the lookahead buffer in bytes, each byte of RAM can track 8 blocks. Must be a multiple of 8 (default 16)\n");
     fprintf(stdout, "       <cache-size>       :: per file cache-size (must be a multiple of read and prog size, default 1024)\n");
     fprintf(stdout, "       <block-wear>       :: dynamic wear leveling for metadata (default 1000, -1 to disable)\n");
     fprintf(stdout, "       <shrinked>         :: if non-zero, shrinks final image (default 0)\n");
@@ -225,19 +226,20 @@ static int to_int(const char *s) {
 }
 
 int main(int argc, char **argv) {
-    char *src = NULL;   // Source directory
-    char *dst = NULL;   // Destination image
-    int c;              // Current option
-    int block_size = 4096; // Block size
-    int read_size = 1024;  // Read size
-    int prog_size = 1024;  // Prog size
-    int fs_size = 0;    // File system size
-    int cache_size = 1024;    // File system size
+    char *src = NULL;        // Source directory
+    char *dst = NULL;        // Destination image
+    int c;                   // Current option
+    int block_size = 4096;   // Block size
+    int read_size = 1024;    // Read size
+    int prog_size = 1024;    // Prog size
+    int fs_size = 0;         // File system size
+    int cache_size = 1024;   // Cache size
+    int lookahead_size = 16; // Look ahead buffer size (optional)
     int block_wear = 1000;
     int shrinked = 0;
     int err;
 
-	while ((c = getopt(argc, argv, "c:o:b:p:r:s:h:w:k:")) != -1) {
+	while ((c = getopt(argc, argv, "c:o:b:p:r:s:h:w:k:l:")) != -1) {
 		switch (c) {
 		case 'c':
 			src = optarg;
@@ -267,6 +269,10 @@ int main(int argc, char **argv) {
 			read_size = to_int(optarg);
 			break;
 
+		case 'l':
+			lookahead_size = to_int(optarg);
+			break;
+
 		case 's':
 			fs_size = to_int(optarg);
 			break;
@@ -294,7 +300,7 @@ int main(int argc, char **argv) {
     cfg.cache_size  = cache_size;
     cfg.block_count = fs_size / cfg.block_size;
     cfg.block_cycles = block_wear;
-    cfg.lookahead_size  = cfg.block_count/8;
+    cfg.lookahead_size  = lookahead_size;
     cfg.context     = NULL;
 
 	data = calloc(1, fs_size);
