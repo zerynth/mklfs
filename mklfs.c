@@ -46,6 +46,7 @@
 #include "lfs/lfs.h"
 
 #include <ctype.h>
+#include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -228,6 +229,8 @@ static int to_int(const char *s) {
 int main(int argc, char **argv) {
     char *src = NULL;        // Source directory
     char *dst = NULL;        // Destination image
+    char *dirc, *basec;      // Temporary copy of src
+    char *dname, *bname;     // Source dirname and basename
     int c;                   // Current option
     int block_size = 4096;   // Block size
     int read_size = 1024;    // Read size
@@ -284,7 +287,7 @@ int main(int argc, char **argv) {
 
     if ((src == NULL) || (dst == NULL) || (block_size <= 0) || (prog_size <= 0) ||
         (read_size <= 0) || (fs_size <= 0)) {
-    		usage();
+            usage();
         exit(1);
     }
 
@@ -321,7 +324,18 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	compact(src);
+	// dirname() and basename() may modify src
+	dirc = strdup(src);
+	basec = strdup(src);
+	dname = dirname(dirc);
+	bname = basename(basec);
+
+	if (chdir(dname) != 0) {
+		fprintf(stderr, "cannot chdir into %s: error=%d (%s)\r\n", src, errno, strerror(errno));
+		return -1;
+	}
+
+	compact(bname);
 
 	FILE *img = fopen(dst, "wb+");
 
