@@ -137,6 +137,34 @@ static void create_file(char *src) {
         fclose(srcf);
     }
 }
+static int create_file_size(char *src) {
+    char *path;
+    int ret,sz=0;
+
+    path = strchr(src, '/');
+    if (path) {
+        fprintf(stdout, "%s\r\n", path);
+
+        // Open source file
+        FILE *srcf = fopen(src,"rb");
+        if (!srcf) {
+            fprintf(stderr,"can't open source file %s: errno=%d (%s)\r\n", src, errno, strerror(errno));
+            exit(1);
+        }
+
+
+        int c =0;
+		while (!feof(srcf)) {
+			c = fgetc(srcf);
+            sz++;
+		}
+
+        // Close source file
+        fclose(srcf);
+    }
+    return sz;
+}
+
 
 static void compact(char *src) {
     DIR *dir;
@@ -164,6 +192,36 @@ static void compact(char *src) {
 
         closedir(dir);
     }
+}
+
+static int compact_size(char *src) {
+    DIR *dir;
+    struct dirent *ent;
+    char curr_path[PATH_MAX];
+    int sz=0;
+
+    dir = opendir(src);
+    if (dir) {
+        while ((ent = readdir(dir))) {
+            // Skip . and .. directories
+            if ((strcmp(ent->d_name,".") != 0) && (strcmp(ent->d_name,"..") != 0)) {
+                // Update the current path
+                strcpy(curr_path, src);
+                strcat(curr_path, "/");
+                strcat(curr_path, ent->d_name);
+
+                if (ent->d_type == DT_DIR) {
+                    create_dir(curr_path);
+                    sz+=compact_size(curr_path);
+                } else if (ent->d_type == DT_REG) {
+                    sz+=create_file_size(curr_path);
+                }
+            }
+        }
+
+        closedir(dir);
+    }
+    return sz;
 }
 
 void usage() {
@@ -291,6 +349,14 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
+	// dirname() and basename() may modify src
+	dirc = strdup(src);
+	basec = strdup(src);
+	dname = dirname(dirc);
+	bname = basename(basec);
+
+    int total_size = compact_size(bname)+block_size*16;
+	fprintf(stderr, "Total size %d\n",total_size);
     // Mount the file system
     cfg.read  = lfs_read;
     cfg.prog  = lfs_prog;
@@ -301,12 +367,13 @@ int main(int argc, char **argv) {
     cfg.read_size   = read_size;
     cfg.prog_size   = prog_size;
     cfg.cache_size  = cache_size;
-    cfg.block_count = fs_size / cfg.block_size;
+    cfg.block_count = total_size / cfg.block_size;
     cfg.block_cycles = block_wear;
     cfg.lookahead_size  = lookahead_size;
     cfg.context     = NULL;
 
-	data = calloc(1, fs_size);
+	// data = calloc(1, fs_size);
+	data = calloc(1, total_size);
 	if (!data) {
 		fprintf(stderr, "no memory for mount\r\n");
 		return -1;
@@ -324,18 +391,14 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	// dirname() and basename() may modify src
-	dirc = strdup(src);
-	basec = strdup(src);
-	dname = dirname(dirc);
-	bname = basename(basec);
 
 	if (chdir(dname) != 0) {
 		fprintf(stderr, "cannot chdir into %s: error=%d (%s)\r\n", src, errno, strerror(errno));
 		return -1;
 	}
 
-	compact(bname);
+
+    compact(bname);
 
 	FILE *img = fopen(dst, "wb+");
 
@@ -344,20 +407,27 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-    while (!shrinked) {
-        uint8_t *block = data+fs_size-cfg.block_size;
+    if (!shrinked) {
+        lfs_superblock_t sb;
+        //get current superblock
+        lfs_z_get_superblock(&lfs,&sb,0);
+        //search superblock in data
         int i;
-        for(i=0;i<cfg.block_size;i++) {
-            if (block[i]!=0) {
-                shrinked=1;
+        for(i=0;i<total_size;i++){
+            if(memcmp(data+i,(uint8_t*)&sb,sizeof(lfs_superblock_t))==0) {
+                //found superblock!
+                //modify it with fs_size
+                lfs_z_get_superblock(&lfs,&sb,fs_size/block_size);
+                memcpy(data+i,(uint8_t*)&sb,sizeof(lfs_superblock_t));
                 break;
+
             }
         }
-        if(!shrinked) fs_size-=cfg.block_size;
+    
     }
-    fprintf(stderr, "image size: %d\n",fs_size);
+    fprintf(stderr, "image size: %d, fs size %d\n",total_size, fs_size);
 
-	fwrite(data, 1, fs_size, img);
+	fwrite(data, 1, total_size, img);
 
 	fclose(img);
 

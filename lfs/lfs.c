@@ -3604,6 +3604,21 @@ static int lfs_deinit(lfs_t *lfs) {
 
     return 0;
 }
+void lfs_z_get_superblock(lfs_t *lfs, lfs_superblock_t *sb, int block_count){
+        // write one superblock
+        lfs_superblock_t superblock = {
+            .version     = LFS_DISK_VERSION,
+            .block_size  = lfs->cfg->block_size,
+            .block_count = (block_count) ? (block_count):(lfs->cfg->block_count),
+            .name_max    = lfs->name_max,
+            .file_max    = lfs->file_max,
+            .attr_max    = lfs->attr_max,
+        };
+
+        lfs_superblock_tole32(&superblock);
+        memcpy(sb,&superblock,sizeof(lfs_superblock_t));
+
+}
 
 #ifndef LFS_READONLY
 static int lfs_rawformat(lfs_t *lfs, const struct lfs_config *cfg) {

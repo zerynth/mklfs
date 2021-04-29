@@ -687,6 +687,7 @@ int lfs_migrate(lfs_t *lfs, const struct lfs_config *cfg);
 #endif
 #endif
 
+void lfs_z_get_superblock(lfs_t *lfs, lfs_superblock_t *sb, int block_count);
 
 #ifdef __cplusplus
 } /* extern "C" */
