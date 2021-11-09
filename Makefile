@@ -1,5 +1,5 @@
-CFLAGS		?= -std=gnu99 -Os -Wall
-CXXFLAGS	?= -std=gnu++11 -Os -Wall
+LOCAL_CFLAGS	?= $(CFLAGS) -std=gnu99 -Os -Wall
+LOCAL_CXXFLAGS	?= $(CXXFLAGS) -std=gnu++11 -Os -Wall
 
 VERSION ?= $(shell git describe --always)
 
@@ -9,9 +9,9 @@ ifeq ($(OS),Windows_NT)
 	ARCHIVE_CMD := 7z a
 	ARCHIVE_EXTENSION := zip
 	TARGET := mklfs.exe
-	TARGET_CFLAGS := -mno-ms-bitfields -Ilfs -I. -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
-	TARGET_LDFLAGS := -Wl,-static -static-libgcc
-	TARGET_CXXFLAGS := -Ilfs -I. -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
+	TARGET_CFLAGS := $(CFLAGS) -mno-ms-bitfields -Ilfs -I. -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
+	TARGET_LDFLAGS := $(LDFLAGS) -Wl,-static -static-libgcc
+	TARGET_CXXFLAGS := $(CXXFLAGS) -Ilfs -I. -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
 	CC=gcc
 	CXX=g++
 else
@@ -27,17 +27,17 @@ else
 		endif
 		CC=gcc
 		CXX=g++
-		TARGET_CFLAGS   = -std=gnu99 -Os -Wall -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
-		TARGET_CXXFLAGS = -std=gnu++11 -Os -Wall -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
+		TARGET_CFLAGS   = $(LOCAL_CFLAGS) -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
+		TARGET_CXXFLAGS = $(LOCAL_CXXFLAGS) -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
 	endif
 	ifeq ($(UNAME_S),Darwin)
 		TARGET_OS := OSX
 		DIST_SUFFIX := osx
 		CC=clang
 		CXX=clang++
-		TARGET_CFLAGS   = -std=gnu99 -Os -Wall -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__ -mmacosx-version-min=10.7 -arch x86_64
-		TARGET_CXXFLAGS = -std=gnu++11 -Os -Wall -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__ -mmacosx-version-min=10.7 -arch x86_64 -stdlib=libc++
-		TARGET_LDFLAGS  = -arch x86_64 -stdlib=libc++
+		TARGET_CFLAGS   = $(LOCAL_CFLAGS) -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__ -mmacosx-version-min=10.7 -arch x86_64
+		TARGET_CXXFLAGS = $(LOCAL_CXXFLAGS) -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__ -mmacosx-version-min=10.7 -arch x86_64 -stdlib=libc++
+		TARGET_LDFLAGS  = $(LDFLAGS) -arch x86_64 -stdlib=libc++
 	endif
 	ARCHIVE_CMD := tar czf
 	ARCHIVE_EXTENSION := tar.gz
