@@ -44,24 +44,23 @@ else
 	TARGET := mklfs
 endif
 
-OBJ             := mklfs.o \
-                   lfs/lfs.o \
-                   lfs/lfs_util.o \
-				   
+SRCS            := mklfs.c \
+                   lfs/lfs.c \
+                   lfs/lfs_util.c
+OBJS            := $(SRCS:.c=.o)
+
 VERSION ?= $(shell git describe --always)
 
 .PHONY: all clean
 
 all: $(TARGET)
 
-$(TARGET):
-	@echo "Building mklfs ..."
-	$(CC) $(TARGET_CFLAGS) -c lfs/lfs.c -o lfs/lfs.o
-	$(CC) $(TARGET_CFLAGS) -c lfs/lfs_util.c -o lfs/lfs_util.o
-	$(CC) $(TARGET_CFLAGS) -c mklfs.c -o mklfs.o
-	$(CC) $(TARGET_CFLAGS) -o $(TARGET) $(OBJ) $(TARGET_LDFLAGS)
+$(TARGET): $(OBJS)
+	$(CC) $(TARGET_CFLAGS) -o $(TARGET) $(OBJS) $(TARGET_LDFLAGS)
+
+%.o: %.c Makefile
+	$(CC) $(TARGET_CFLAGS) -c $< -o $@
 
 clean:
-	@rm -f *.o
-	@rm -f lfs/*.o
+	@rm -f $(OBJS)
 	@rm -f $(TARGET)
