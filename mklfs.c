@@ -137,14 +137,12 @@ static void create_file(char *src) {
         fclose(srcf);
     }
 }
-static int create_file_size(char *src) {
+static long file_size(char *src) {
     char *path;
-    int sz=0;
+    long sz=0;
 
     path = strchr(src, '/');
     if (path) {
-        fprintf(stdout, "%s\r\n", path);
-
         // Open source file
         FILE *srcf = fopen(src,"rb");
         if (!srcf) {
@@ -152,14 +150,17 @@ static int create_file_size(char *src) {
             exit(1);
         }
 
-
-        while (!feof(srcf)) {
-            fgetc(srcf);
-            sz++;
+        fseek(srcf, 0, SEEK_END);
+        sz = ftell(srcf);
+        if (sz == -1) {
+            fprintf(stderr,"can't get source file size %s: errno=%d (%s)\r\n", src, errno, strerror(errno));
+            exit(1);
         }
 
         // Close source file
         fclose(srcf);
+
+        fprintf(stdout, "%s:%ld\r\n", path, sz);
     }
     return sz;
 }
@@ -193,7 +194,7 @@ static void compact(char *src) {
     }
 }
 
-static int compact_size(char *src) {
+static int dir_size(char *src) {
     DIR *dir;
     struct dirent *ent;
     char curr_path[PATH_MAX];
@@ -210,9 +211,9 @@ static int compact_size(char *src) {
                 strcat(curr_path, ent->d_name);
 
                 if (ent->d_type == DT_DIR) {
-                    sz+=compact_size(curr_path);
+                    sz+=dir_size(curr_path);
                 } else if (ent->d_type == DT_REG) {
-                    sz+=create_file_size(curr_path);
+                    sz+=file_size(curr_path);
                 }
             }
         }
@@ -358,7 +359,7 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    int total_size = compact_size(bname)+block_size*16;
+    int total_size = dir_size(bname)+block_size*16;
     fprintf(stderr, "Total size %d\n",total_size);
     // Mount the file system
     cfg.read  = lfs_read;
