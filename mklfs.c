@@ -210,7 +210,6 @@ static int compact_size(char *src) {
                 strcat(curr_path, ent->d_name);
 
                 if (ent->d_type == DT_DIR) {
-                    create_dir(curr_path);
                     sz+=compact_size(curr_path);
                 } else if (ent->d_type == DT_REG) {
                     sz+=create_file_size(curr_path);
@@ -354,6 +353,11 @@ int main(int argc, char **argv) {
     dname = dirname(dirc);
     bname = basename(basec);
 
+    if (chdir(dname) != 0) {
+        fprintf(stderr, "cannot chdir into %s: error=%d (%s)\r\n", src, errno, strerror(errno));
+        return -1;
+    }
+
     int total_size = compact_size(bname)+block_size*16;
     fprintf(stderr, "Total size %d\n",total_size);
     // Mount the file system
@@ -389,13 +393,6 @@ int main(int argc, char **argv) {
         fprintf(stderr, "mount error: error=%d\r\n", err);
         return -1;
     }
-
-
-    if (chdir(dname) != 0) {
-        fprintf(stderr, "cannot chdir into %s: error=%d (%s)\r\n", src, errno, strerror(errno));
-        return -1;
-    }
-
 
     compact(bname);
 
