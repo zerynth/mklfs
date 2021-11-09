@@ -169,7 +169,7 @@ static long file_size(char *src) {
 static void compact(char *src) {
     DIR *dir;
     struct dirent *ent;
-    char curr_path[PATH_MAX];
+    char curr_path[PATH_MAX+1];
 
     dir = opendir(src);
     if (dir) {
@@ -177,9 +177,9 @@ static void compact(char *src) {
             // Skip . and .. directories
             if ((strcmp(ent->d_name,".") != 0) && (strcmp(ent->d_name,"..") != 0)) {
                 // Update the current path
-                strcpy(curr_path, src);
-                strcat(curr_path, "/");
-                strcat(curr_path, ent->d_name);
+                strncpy(curr_path, src, PATH_MAX-strlen(curr_path));
+                strncat(curr_path, "/", PATH_MAX-strlen(curr_path));
+                strncat(curr_path, ent->d_name, PATH_MAX-strlen(curr_path));
 
                 if (ent->d_type == DT_DIR) {
                     create_dir(curr_path);
@@ -197,7 +197,7 @@ static void compact(char *src) {
 static int dir_size(char *src) {
     DIR *dir;
     struct dirent *ent;
-    char curr_path[PATH_MAX];
+    char curr_path[PATH_MAX+1];
     int sz=0;
 
     dir = opendir(src);
@@ -206,9 +206,9 @@ static int dir_size(char *src) {
             // Skip . and .. directories
             if ((strcmp(ent->d_name,".") != 0) && (strcmp(ent->d_name,"..") != 0)) {
                 // Update the current path
-                strcpy(curr_path, src);
-                strcat(curr_path, "/");
-                strcat(curr_path, ent->d_name);
+                strncpy(curr_path, src, PATH_MAX-strlen(curr_path));
+                strncat(curr_path, "/", PATH_MAX-strlen(curr_path));
+                strncat(curr_path, ent->d_name, PATH_MAX-strlen(curr_path));
 
                 if (ent->d_type == DT_DIR) {
                     sz+=dir_size(curr_path);
