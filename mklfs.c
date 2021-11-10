@@ -53,7 +53,11 @@
 #include <unistd.h>
 #include <errno.h>
 #include <limits.h>
+#if !defined(__CYGWIN__) && defined(TARGET_OS) && TARGET_OS == WINDOWS
+#include "dirent.h"
+#else
 #include <dirent.h>
+#endif
 #include <sys/types.h>
 
 static struct lfs_config cfg;

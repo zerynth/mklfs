@@ -4,14 +4,18 @@ CXXFLAGS	?= -std=gnu++11 -Os -Wall
 VERSION ?= $(shell git describe --always)
 
 ifeq ($(OS),Windows_NT)
+	ifneq ($(OSTYPE),cygwin)
+		CFLAGS += -Iinclude/win32
+		CXXFLAGS += -Iinclude/win32
+	endif
 	TARGET_OS := WINDOWS
 	DIST_SUFFIX := windows
 	ARCHIVE_CMD := 7z a
 	ARCHIVE_EXTENSION := zip
 	TARGET := mklfs.exe
-	TARGET_CFLAGS := -mno-ms-bitfields -Ilfs -I. -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
+	TARGET_CFLAGS := $(CFLAGS) -mno-ms-bitfields -Ilfs -I. -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
 	TARGET_LDFLAGS := -Wl,-static -static-libgcc
-	TARGET_CXXFLAGS := -Ilfs -I. -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
+	TARGET_CXXFLAGS := $(CXXFLAGS) -Ilfs -I. -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
 	CC=gcc
 	CXX=g++
 else
