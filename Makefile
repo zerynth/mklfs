@@ -12,8 +12,8 @@ ifeq ($(OS),Windows_NT)
 	TARGET_CFLAGS := $(CFLAGS) -mno-ms-bitfields -Ilfs -I. -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
 	TARGET_LDFLAGS := $(LDFLAGS) -Wl,-static -static-libgcc
 	TARGET_CXXFLAGS := $(CXXFLAGS) -Ilfs -I. -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
-	CC=gcc
-	CXX=g++
+	CC ?= gcc
+	CXX ?= g++
 else
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Linux)
@@ -25,16 +25,16 @@ else
 		ifneq ($(filter %86,$(UNAME_P)),)
 			DIST_SUFFIX := linux32
 		endif
-		CC=gcc
-		CXX=g++
+		CC ?= gcc
+		CXX ?= g++
 		TARGET_CFLAGS   = $(LOCAL_CFLAGS) -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
 		TARGET_CXXFLAGS = $(LOCAL_CXXFLAGS) -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
 	endif
 	ifeq ($(UNAME_S),Darwin)
 		TARGET_OS := OSX
 		DIST_SUFFIX := osx
-		CC=clang
-		CXX=clang++
+		CC ?= clang
+		CXX ?= clang++
 		TARGET_CFLAGS   = $(LOCAL_CFLAGS) -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__ -mmacosx-version-min=10.7 -arch x86_64
 		TARGET_CXXFLAGS = $(LOCAL_CXXFLAGS) -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__ -mmacosx-version-min=10.7 -arch x86_64 -stdlib=libc++
 		TARGET_LDFLAGS  = $(LDFLAGS) -arch x86_64 -stdlib=libc++
