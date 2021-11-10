@@ -4,6 +4,10 @@ LOCAL_CXXFLAGS	?= $(CXXFLAGS) -std=gnu++11 -Os -Wall
 VERSION ?= $(shell git describe --always)
 
 ifeq ($(OS),Windows_NT)
+	ifneq ($(OSTYPE),cygwin)
+		CFLAGS += -Iinclude/win32
+		CXXFLAGS += -Iinclude/win32
+	endif
 	TARGET_OS := WINDOWS
 	DIST_SUFFIX := windows
 	ARCHIVE_CMD := 7z a
