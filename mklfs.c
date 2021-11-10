@@ -45,6 +45,10 @@
 
 #include "lfs/lfs.h"
 
+#if defined TARGET_OS && TARGET_OS == WINDOWS
+#include "dirent.h"
+#endif
+
 #include <ctype.h>
 #include <libgen.h>
 #include <stdio.h>
