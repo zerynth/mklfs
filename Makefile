@@ -1,5 +1,5 @@
-CFLAGS		?= -std=gnu99 -Os -Wall
-CXXFLAGS	?= -std=gnu++11 -Os -Wall
+LOCAL_CFLAGS	?= $(CFLAGS) -std=gnu99 -Os -Wall
+LOCAL_CXXFLAGS	?= $(CXXFLAGS) -std=gnu++11 -Os -Wall
 
 VERSION ?= $(shell git describe --always)
 
@@ -14,10 +14,10 @@ ifeq ($(OS),Windows_NT)
 	ARCHIVE_EXTENSION := zip
 	TARGET := mklfs.exe
 	TARGET_CFLAGS := $(CFLAGS) -mno-ms-bitfields -Ilfs -I. -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
-	TARGET_LDFLAGS := -Wl,-static -static-libgcc
+	TARGET_LDFLAGS := $(LDFLAGS) -Wl,-static -static-libgcc
 	TARGET_CXXFLAGS := $(CXXFLAGS) -Ilfs -I. -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
-	CC=gcc
-	CXX=g++
+	CC ?= gcc
+	CXX ?= g++
 else
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Linux)
@@ -29,43 +29,42 @@ else
 		ifneq ($(filter %86,$(UNAME_P)),)
 			DIST_SUFFIX := linux32
 		endif
-		CC=gcc
-		CXX=g++
-		TARGET_CFLAGS   = -std=gnu99 -Os -Wall -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
-		TARGET_CXXFLAGS = -std=gnu++11 -Os -Wall -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
+		CC ?= gcc
+		CXX ?= g++
+		TARGET_CFLAGS   = $(LOCAL_CFLAGS) -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
+		TARGET_CXXFLAGS = $(LOCAL_CXXFLAGS) -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__
 	endif
 	ifeq ($(UNAME_S),Darwin)
 		TARGET_OS := OSX
 		DIST_SUFFIX := osx
-		CC=clang
-		CXX=clang++
-		TARGET_CFLAGS   = -std=gnu99 -Os -Wall -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__ -mmacosx-version-min=10.7 -arch x86_64
-		TARGET_CXXFLAGS = -std=gnu++11 -Os -Wall -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__ -mmacosx-version-min=10.7 -arch x86_64 -stdlib=libc++
-		TARGET_LDFLAGS  = -arch x86_64 -stdlib=libc++
+		CC ?= clang
+		CXX ?= clang++
+		TARGET_CFLAGS   = $(LOCAL_CFLAGS) -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__ -mmacosx-version-min=10.7 -arch x86_64
+		TARGET_CXXFLAGS = $(LOCAL_CXXFLAGS) -Ilfs -I. -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" -D__NO_INLINE__ -mmacosx-version-min=10.7 -arch x86_64 -stdlib=libc++
+		TARGET_LDFLAGS  = $(LDFLAGS) -arch x86_64 -stdlib=libc++
 	endif
 	ARCHIVE_CMD := tar czf
 	ARCHIVE_EXTENSION := tar.gz
 	TARGET := mklfs
 endif
 
-OBJ             := mklfs.o \
-                   lfs/lfs.o \
-                   lfs/lfs_util.o \
-				   
+SRCS            := mklfs.c \
+                   lfs/lfs.c \
+                   lfs/lfs_util.c
+OBJS            := $(SRCS:.c=.o)
+
 VERSION ?= $(shell git describe --always)
 
 .PHONY: all clean
 
 all: $(TARGET)
 
-$(TARGET):
-	@echo "Building mklfs ..."
-	$(CC) $(TARGET_CFLAGS) -c lfs/lfs.c -o lfs/lfs.o
-	$(CC) $(TARGET_CFLAGS) -c lfs/lfs_util.c -o lfs/lfs_util.o
-	$(CC) $(TARGET_CFLAGS) -c mklfs.c -o mklfs.o
-	$(CC) $(TARGET_CFLAGS) -o $(TARGET) $(OBJ) $(TARGET_LDFLAGS)
+$(TARGET): $(OBJS)
+	$(CC) $(TARGET_CFLAGS) -o $(TARGET) $(OBJS) $(TARGET_LDFLAGS)
+
+%.o: %.c Makefile
+	$(CC) $(TARGET_CFLAGS) -c $< -o $@
 
 clean:
-	@rm -f *.o
-	@rm -f lfs/*.o
+	@rm -f $(OBJS)
 	@rm -f $(TARGET)
